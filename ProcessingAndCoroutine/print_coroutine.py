@@ -2,6 +2,7 @@ import asyncio
 from asyncio import Semaphore
 from concurrent.futures import ProcessPoolExecutor
 import functools
+import os
 
 
 async def print_test(body: str, _sem: Semaphore):
@@ -22,7 +23,8 @@ def execute(i: int, _workers: int, _s: int):
 
 
 def main():
-    max_workers = 4
+    max_workers = os.cpu_count()
+    # print(f"max_workers: {max_workers}")
     _fun = functools.partial(execute, _workers=100, _s=10)
     with ProcessPoolExecutor(max_workers=max_workers) as _pool:
         _pool.map(_fun, range(max_workers))

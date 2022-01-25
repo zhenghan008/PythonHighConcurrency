@@ -2,6 +2,7 @@ from threading import Lock
 from concurrent.futures import (ProcessPoolExecutor, ThreadPoolExecutor)
 import time
 import functools
+import os
 
 
 def print_test(body: str, lock: Lock):
@@ -19,7 +20,7 @@ def run(i: int, _workers: int):
 
 
 def main():
-    max_workers = 4
+    max_workers = os.cpu_count()
     _fun = functools.partial(run, _workers=100)
     with ProcessPoolExecutor(max_workers=max_workers) as _pool:
         _pool.map(_fun,  range(max_workers))
