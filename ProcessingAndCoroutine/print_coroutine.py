@@ -1,14 +1,37 @@
 import asyncio
-from asyncio import Semaphore
+import time
+from asyncio import Semaphore, to_thread
+from threading import Lock
 from concurrent.futures import ProcessPoolExecutor
 import functools
 import os
+import random
+
+work_path = os.path.abspath(os.path.dirname(__file__))
+lock = Lock()
+
+
+async def p_g():
+    while 1:
+        for i in range(random.randint(100, 10000)):
+            yield i
+            await asyncio.sleep(0.0001)
+        # time.sleep(random.randint(1, 5))
+
+
+def write_to_file(body: str, lock: Lock):
+    with lock:
+        with open(work_path + "/test.txt", "a") as f:
+            f.write(body)
 
 
 async def print_test(body: str, _sem: Semaphore):
-    async with _sem:
-        print(f"body: {body}")
-        await asyncio.sleep(0.0001)
+    async for each in p_g():
+        async with _sem:
+            await to_thread(write_to_file, f"each: {each}, body: {body}\r\n", lock)
+            # print(f"body: {body}\r\n")
+            # print(f"each: {each}, body: {body}\r\n")
+            # await asyncio.sleep(0.00001)
 
 
 async def run(i: int, _workers: int, _s: int):
@@ -25,8 +48,8 @@ def execute(i: int, _workers: int, _s: int):
 def main():
     max_workers = os.cpu_count()
     # print(f"max_workers: {max_workers}")
-    _fun = functools.partial(execute, _workers=100, _s=10)
-    with ProcessPoolExecutor(max_workers=max_workers) as _pool:
+    _fun = functools.partial(execute, _workers=100, _s=50)
+    with ProcessPoolExecutor() as _pool:
         _pool.map(_fun, range(max_workers))
 
 
